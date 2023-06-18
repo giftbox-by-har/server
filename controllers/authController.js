@@ -1,6 +1,7 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/userModel");
+JSON
 
 // Fungsi untuk menghasilkan token akses
 const generateAccessToken = (userId) => {
@@ -146,9 +147,16 @@ const verifyToken = (req, res) => {
 	}
 };
 
+const verifyToken2 = async (accessToken)=>{
+	const x = await jwt.decode(accessToken)
+	const y = await User.findById(x.userId).select('-password')
+	return y
+}
+
 module.exports = {
 	login,
 	refreshToken,
 	register,
 	verifyToken,
+	verifyToken2
 };

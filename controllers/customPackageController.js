@@ -1,5 +1,8 @@
 const CustomPackage = require("../models/customPackageModel");
+const Preferences = require("../models/preferencesModel");
 const Product = require("../models/productModel");
+const User = require("../models/userModel");
+const { verifyToken, verifyToken2 } = require("./authController");
 
 // Membuat custom package baru
 
@@ -111,10 +114,87 @@ const deleteCustomPackage = async (req, res) => {
 	}
 };
 
+const pushPreferences = async (req,res) => {
+	const data_array = req.body
+	data_array.forEach(async function(e){
+		const user = e.user
+		const products = e.products
+		const found = await Preferences.find({gender:user.gender,age:user.age})
+		if(found.length>0){
+			console.log("FOUND")
+			products.forEach(async function(p){
+				const found2 = await Preferences.find({
+					gender : user.gender,
+					age : user.age,
+					products : {$elemMatch : {product_id : p.product._id}}
+				})
+
+				if(found2.length > 0){
+					await Preferences.updateOne({
+						gender : user.gender, 
+						age: user.age,
+						products : {$elemMatch : {product_id : p.product._id}}
+					
+					},
+					{
+						$inc : {'products.$.quantity': p.quantity}
+					}
+					)
+				}
+				else {
+					await Preferences.updateOne({
+						gender : user.gender, 
+						age: user.age
+					
+					},
+					{
+						$push : {
+							products : {
+								product_id : p.product._id,
+								quantity : p.quantity
+							}
+						}
+					}
+					)
+
+				}
+
+
+				console.log(p)
+			})
+		}
+		else{
+			const x_arr = []
+			products.forEach(function(p){
+				x_arr.push(
+					{
+						product_id : p.product._id,
+						quantity : p.quantity
+					}
+				)
+
+
+			})
+			console.log("NOT FOUND, INSERTING")
+			await Preferences.create({
+				gender : user.gender,
+				age : user.age,
+				products : x_arr
+			})
+		}
+	})
+
+	res.send("SUCCESS")
+
+
+
+}
+
 module.exports = {
 	createCustomPackage,
 	getAllCustomPackages,
 	getCustomPackageById,
 	updateCustomPackage,
 	deleteCustomPackage,
+	pushPreferences
 };
